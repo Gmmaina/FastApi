@@ -6,12 +6,14 @@ from pydantic import BaseModel, EmailStr, Field
 class UserBase(BaseModel):
     username: str  
     email: EmailStr
+    phone_number: str
     password: str 
     
 # Schema for user response (used when returning user data)
 class UserResponse(BaseModel):
     username: str  
     email: EmailStr
+    phone_number: str
     
 # Enables ORM mode for compatibility with ORMs like SQLAlchemy
     class Config:
