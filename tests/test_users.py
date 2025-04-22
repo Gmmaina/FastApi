@@ -1,30 +1,8 @@
-import pytest
-from .database import session, client
+from jose import jwt
+from app.config import settings
 from app import schemas
-    
-# def test_create_user():
-#     res = client.post(
-#         "/users/", json={"username": "testuser4", "email": "test4@gmail.com",  "phone_number":"0110081377", "password": "testpass"}
-#     )
-#     print(res.json())
-#     new_user = schemas.UserResponse(**res.json())
-#     assert new_user.username == "testuser4"    
-#     assert res.status_code == 201
-  
-@pytest.fixture
-def test_user(client):
-    user_data = {
-        "username": "testuser",
-        "email": "testuser@gmail.com",
-        "phone_number": "0110081477",  
-        "password": "testpass"
-    }
-    res = client.post("/users/", json=user_data) 
-    assert res.status_code == 201
-    print(res.json())
-    new_user = res.json()
-    new_user['password'] = user_data["password"]
-    return new_user
+import pytest
+
 
 def test_create_user(client):
     res = client.post(
@@ -34,7 +12,7 @@ def test_create_user(client):
     new_user = schemas.UserResponse(**res.json())
     assert new_user.username == "testuser4"
 
-def test_user_login(client, test_user):
+def test_user_login(test_user, client):
     res = client.post(
         "/login", data={"username": test_user['email'], "password": test_user['password']}
     )
@@ -48,6 +26,30 @@ def test_user_login(client, test_user):
     # ress = client.post(
     #     "/login", data={"username": "testuser", "password": "testpass"}
     # )
-    print(res.json())
+    login_res = schemas.Token(**res.json())
+    payload = jwt.decode(login_res.access_token, settings.secret_key, algorithms=[settings.algorithm])
+    id = payload.get("user_id")
+    assert id == test_user['user_id']
+    assert login_res.token_type == "bearer"
     assert res.status_code == 200
     assert ress.status_code == 200
+    
+
+@pytest.mark.parametrize("username, password, status_code",
+    [
+        ("testuser", "testpass11", 401),
+        ("testuserqq", "testpass", 401),
+        ("testuser@gmail.com", "testpass2", 401),
+        ("testuser3", "testpass3", 401),
+        ("testuser@gmail.com", "testpass4", 401),
+        (None, "testpass", 422),
+        ("testuser", None, 422),
+    ]
+)
+  
+def test_incorrect_login(test_user, client, username, password, status_code):
+    res = client.post(
+        "/login", data={"username": username, "password": password}
+    )
+    assert res.status_code == status_code
+    # assert res.json().get("detail") == "Invalid Credentials"

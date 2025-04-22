@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app import models
 from .database import get_db
 from .config import settings
-
 from app.schemas import TokenData
 
 # OAuth2PasswordBearer is used to retrieve the token from the request

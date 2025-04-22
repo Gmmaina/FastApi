@@ -63,7 +63,7 @@ def get_posts(db: Session = Depends(get_db), limit: int = 10, skip: int = 0, sea
     posts = db.query(models.Posts, func.count(models.Likes.post_id).label("likes_count")).join(models.Likes, models.Posts.post_id == models.Likes.post_id, isouter=True).group_by(models.Posts.post_id).filter(models.Posts.title.contains(search)).limit(limit).offset(skip).all()
 
     
-        # Serialize the query result into the expected response format
+    # Serialize the query result into the expected response format
     return [
         {
             "post": {
@@ -73,8 +73,10 @@ def get_posts(db: Session = Depends(get_db), limit: int = 10, skip: int = 0, sea
                 "created_at": post.created_at,
                 "owner_id": post.owner_id,
                 "owner": {
+                    "user_id": post.owner.user_id,
                     "username": post.owner.username,
-                    "email": post.owner.email
+                    "email": post.owner.email,
+                    "phone_number": post.owner.phone_number
                 }
             },
             "likes": likes
@@ -108,6 +110,7 @@ def get_post(post_id: int, db: Session = Depends(get_db)):
             owner = UserResponse(
                 username = post.owner.username,
                 email = post.owner.email
+                
             )
         ),
         likes = likes_count

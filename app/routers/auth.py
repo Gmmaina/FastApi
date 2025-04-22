@@ -10,7 +10,6 @@ from .. import models, oauth2, utils
 router = APIRouter(
     tags=["Authentication"]
 )
-
 @router.post("/login", response_model=Token)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
@@ -22,26 +21,31 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         dict: A dictionary containing the login status, access token, and token type.
     Raises:
         HTTPException: If the user credentials are invalid or the user does not exist.
-    COMMENT:
-    - This function uses SQLAlchemy to query the database for a user matching the provided username or email.
-    - Password verification is performed using a utility function.
-    - If authentication is successful, an access token is generated using the OAuth2 mechanism.
     """
+    # Validate input fields
+    if not user_credentials.username or not user_credentials.password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Username and password are required"
+        )
+
+    # Query the database for the user
     user = db.query(models.Users).filter(
         or_(
             models.Users.email == user_credentials.username,
             models.Users.username == user_credentials.username
         )
-        ).first()
+    ).first()
    
+    # Verify user and password
     if not user or not utils.verify_password(user_credentials.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Invalid Credentials",
             headers={"WWW-Authenticate": "Bearer"}
-            )
+        )
    
-
+    # Generate access token
     access_token = oauth2.create_access_token(data={"user_id": user.user_id})
     
     return {

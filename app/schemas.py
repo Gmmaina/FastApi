@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     
 # Schema for user response (used when returning user data)
 class UserResponse(BaseModel):
+    user_id: int
     username: str  
     email: EmailStr
     phone_number: str

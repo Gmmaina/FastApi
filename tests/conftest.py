@@ -4,8 +4,9 @@ from app.main import app
 import pytest
 from sqlalchemy.orm import sessionmaker
 from app.config import settings
-from app import schemas
+from app import models, schemas
 from fastapi.testclient import TestClient
+from app.oauth2 import create_access_token
 
 # client = TestClient(app)
 
@@ -64,3 +65,58 @@ def test_user(client):
     new_user = res.json()
     new_user['password'] = user_data["password"]
     return new_user
+
+
+@pytest.fixture
+def token(test_user):
+    return create_access_token({"user_id": test_user['user_id']})
+
+
+@pytest.fixture
+def authorized_client(client, token):
+    client.headers = {
+        **client.headers,
+        "Authorization": f"Bearer {token}"
+    }
+    return client
+
+@pytest.fixture
+def test_posts(test_user, session):
+    post_data = [
+        {
+            "title": "test title",
+            "content": "test content",
+            "owner_id": test_user['user_id']
+        },
+        {
+            "title": "second test title",
+            "content": "second test content",
+            "owner_id": test_user['user_id']
+        },
+        {
+            "title": "third test title",
+            "content": "third test content",
+            "owner_id": test_user['user_id']
+        },
+        {
+            "title": "fourth test title",
+            "content": "fourth test content",
+            "owner_id": test_user['user_id']
+        },
+        {
+            "title": "fifth test title",
+            "content": "fifth test content",
+            "owner_id": test_user['user_id']
+        }
+    ]
+
+    def create_post_model(post):
+        return models.Posts(**post)
+
+    post_map = map(create_post_model, post_data)
+    posts = list(post_map)
+    session.add_all(posts)
+    session.commit()
+    # Query the posts from the database to return them
+    posts = session.query(models.Posts).all()
+    return posts
